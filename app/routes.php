@@ -11,7 +11,13 @@
 |
 */
 
-Route::get('/', function()
-{
-	return View::make('hello');
-});
+Route::model('game', 'Game');
+
+Route::get('/', 'GamesController@index');
+Route::get('/create', 'GamesController@create');
+Route::get('/edit/{game}', 'GamesController@edit');
+Route::get('/delete/{game}', 'GamesController@delete');
+
+Route::post('/create', 'GamesController@handleCreate');
+Route::post('/edit', 'GamesController@handleEdit');
+Route::post('/delete', 'GamesController@handleDelete');
