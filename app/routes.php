@@ -20,4 +20,4 @@ Route::get('/delete/{game}', 'GamesController@delete');
 
 Route::post('/create', 'GamesController@handleCreate');
 Route::post('/edit', 'GamesController@handleEdit');
-Route::post('/delete', 'GamesController@handleDelete');
+Route::post('/delete/{game}', 'GamesController@handleDelete');
