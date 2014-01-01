@@ -5,22 +5,23 @@
         <h1>Create Game <small>and someday finish it!</small></h1>
     </div>
 
-    @include('_partials.errors');
+    @include('_partials.errors')
 
     <form action="{{ action('GamesController@handleCreate') }}" method="post">
         <div class="form-group">
             <label for="title">Title</label>
-            <input class="form-control" name="title" id="title">
+            {{ Form::text('title', isset($title)? $title:'', ['class' => 'form-control']) }}
         </div>
 
         <div class="form-group">
             <label for="publisher">Publisher</label>
-            <input class="form-control" name="publisher" id="publisher">
+            {{ Form::text('publisher', isset($publisher)? $publisher:'', ['class' => 'form-control']) }}
         </div>
 
         <div class="checkbox">
             <label for="complete">
-                <input type="checkbox" name="complete" id="complete"> Complete?
+                {{ Form::checkbox('completed', '1', isset($completed)? $completed:'') }}
+                Completed?
             </label>
         </div>
 

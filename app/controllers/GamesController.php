@@ -27,7 +27,7 @@ class GamesController extends BaseController
             return Redirect::action('GamesController@index');
         }
 
-        return View::make('create')->withErrors($validator->errors);
+        return View::make('create')->with(Input::all())->withErrors($validator->errors);
     }
 
     public function edit(Game $game)

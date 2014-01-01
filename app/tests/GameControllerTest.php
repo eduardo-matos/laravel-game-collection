@@ -99,16 +99,31 @@ class GameControllerTest extends TestCase
 
 	public function testHandleCreateActuallyCreatesGame()
 	{
-		$gameInput = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
+		$gameInput = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false];
 		$this->client->request('POST', '/create', $gameInput);
 		$this->assertEquals(DB::table('games')->count(), 1);
 	}
 
 	public function testHandleCreateShowErrorsWhenGameDoesNotValidate()
 	{
-		$gameInput = ['completed' => false];
+		$gameInput = ['title' => 't'];
 		$this->client->request('POST', '/create', $gameInput);
 		$this->assertContains('errors', strtolower($this->client->getResponse()->getContent()));	
+	}
+
+	public function testHandleCreateFillValidWhenThereAreErrorsInOtherFields()
+	{
+		$gameInput = ['title' => 't'];
+		$this->client->request('POST', '/create', $gameInput);
+		$this->assertContains('value="t"', strtolower($this->client->getResponse()->getContent()));	
+
+		$gameInput = ['publisher' => 'p'];
+		$this->client->request('POST', '/create', $gameInput);
+		$this->assertContains('value="p"', strtolower($this->client->getResponse()->getContent()));
+
+		$gameInput = ['completed' => true];
+		$this->client->request('POST', '/create', $gameInput);
+		$this->assertContains('checked="checked"', strtolower($this->client->getResponse()->getContent()));
 	}
 
 	public function testEditPageExists()
