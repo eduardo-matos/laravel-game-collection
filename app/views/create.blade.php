@@ -5,6 +5,8 @@
         <h1>Create Game <small>and someday finish it!</small></h1>
     </div>
 
+    @include('_partials.errors');
+
     <form action="{{ action('GamesController@handleCreate') }}" method="post">
         <div class="form-group">
             <label for="title">Title</label>

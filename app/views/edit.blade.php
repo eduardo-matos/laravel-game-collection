@@ -5,6 +5,8 @@
         <h1>Edit Game <small>Go on, mark it complete!</small></h1>
     </div>
 
+    @include('_partials.errors')
+
     <form action="{{ action('GamesController@handleEdit') }}" method="post">
 
         <input type="hidden" name="id" value="{{ $game->id }}">

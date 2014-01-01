@@ -15,13 +15,19 @@ class GamesController extends BaseController
 
     public function handleCreate()
     {
-        $game = new Game;
-        $game->title = Input::get('title');
-        $game->publisher = Input::get('publisher');
-        $game->completed = Input::has('completed');
-        $game->save();
+        $validator = new Validators\Game;
 
-        return Redirect::action('GamesController@index');
+        if($validator->passes()) {
+            $game = new Game;
+            $game->title = Input::get('title');
+            $game->publisher = Input::get('publisher');
+            $game->completed = Input::has('completed');
+            $game->save();
+
+            return Redirect::action('GamesController@index');
+        }
+
+        return View::make('create')->withErrors($validator->errors);
     }
 
     public function edit(Game $game)
@@ -31,7 +37,14 @@ class GamesController extends BaseController
 
     public function handleEdit()
     {
+        $validator = new Validators\Game;
+
         $game = Game::findOrFail(Input::get('id'));
+
+        if(!$validator->passes()) {
+            return View::make('edit', compact('game'))->withErrors($validator->errors);
+        }
+
         $game->title = Input::get('title');
         $game->publisher = Input::get('publisher');
         $game->completed = Input::has('completed');

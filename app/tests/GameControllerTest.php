@@ -104,7 +104,14 @@ class GameControllerTest extends TestCase
 		$this->assertEquals(DB::table('games')->count(), 1);
 	}
 
-	public function testUpdatePageExists()
+	public function testHandleCreateShowErrorsWhenGameDoesNotValidate()
+	{
+		$gameInput = ['completed' => false];
+		$this->client->request('POST', '/create', $gameInput);
+		$this->assertContains('errors', strtolower($this->client->getResponse()->getContent()));	
+	}
+
+	public function testEditPageExists()
 	{
 		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
 		$id = DB::table('games')->insertGetId($game);
@@ -129,7 +136,7 @@ class GameControllerTest extends TestCase
 		$this->client->request('POST', "/edit/999");
 	}
 
-	public function testHandleUpdatePageActuallyUpdatesGame()
+	public function testHandleEditPageActuallyUpdatesGame()
 	{
 		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
 		$id = DB::table('games')->insertGetId($game);
@@ -143,7 +150,7 @@ class GameControllerTest extends TestCase
 		$this->assertEquals(true, $game->completed);
 	}
 
-	public function testHandleUpdatePageRedirectsToIndexAfterUpdatingGame()
+	public function testHandleEditPageRedirectsToIndexAfterUpdatingGame()
 	{
 		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
 		$id = DB::table('games')->insertGetId($game);
@@ -152,5 +159,15 @@ class GameControllerTest extends TestCase
 		$this->client->request('POST', "/edit", $input);
 		
 		$this->assertRedirectedTo('/');
+	}
+
+	public function testHandleEditShowErrorsWhenGameDoesNotValidate()
+	{
+		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
+		$id = DB::table('games')->insertGetId($game);
+
+		$gameInput = ['completed' => false, 'id' => $id];
+		$this->client->request('POST', '/edit', $gameInput);
+		$this->assertContains('errors', strtolower($this->client->getResponse()->getContent()));	
 	}
 }
