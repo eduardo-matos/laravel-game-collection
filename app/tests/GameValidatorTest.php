@@ -5,7 +5,7 @@ use Validators\Game as GameValidator;
 class GameValidatorTest extends TestCase
 {
 
-	public function testTitleAndPublisherAndCompletedFieldsAreRequired()
+	public function testTitleAndPublisherFieldsAreRequired()
 	{
 		$input1 = array('title' => 't');
 		$input2 = array('publisher' => 'p');

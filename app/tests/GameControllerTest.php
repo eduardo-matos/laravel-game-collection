@@ -5,26 +5,20 @@ class GameControllerTest extends TestCase
 
 	public function testIndexPageExists()
 	{
-		// act
 		$this->client->request('GET', '/');
-
-		// assert
 		$this->assertResponseStatus(200);
 	}
 
-	public function testIndexShowsGameList()
+	public function testIndexPageShowsGameList()
 	{
-		// arrange
 		$games = [
 			['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'],
 			['title' => 'Test 2', 'publisher' => 'Publisher 2', 'completed' => true, 'created_at' => '2012-12-12 12:12:14', 'updated_at' => '2012-12-12 12:12:15'],
 		];
 		DB::table('games')->insert($games);
 
-		// act
 		$crawler = $this->client->request('GET', '/');
 
-		// assert
 		$content = strtolower($this->client->getResponse()->getContent());
 		$this->assertContains('test 1', $content);
 		$this->assertContains('test 2', $content);
@@ -36,27 +30,21 @@ class GameControllerTest extends TestCase
 
 	public function testDeletePageExists()
 	{
-		// arrange
 		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
 		$id = DB::table('games')->insertGetId($game);
 
-		// act
 		$this->client->request('GET', "/delete/{$id}");
 
-		// assert
 		$this->assertResponseStatus(200);
 	}
 
-	public function testHandleDeletePageActuallyRemovesRecordFromDatabaseExists()
+	public function testHandleDeletePageActuallyRemovesRecordFromDatabase()
 	{
-		// // arrange
 		$games = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
 		$id = DB::table('games')->insertGetId($games);
 
-		// act
 		$this->client->request('POST', "/delete/{$id}");
 
-		// assert
 		$this->assertEquals(DB::table('games')->count(), 0);
 	}
 
@@ -65,7 +53,6 @@ class GameControllerTest extends TestCase
 	 */
 	public function testDeletePageReponseIs404WhenGameDoesNotExist()
 	{
-		// act
 		$this->client->request('GET', "/delete/999");
 	}
 
@@ -74,20 +61,16 @@ class GameControllerTest extends TestCase
 	 */
 	public function testHandleDeletePageReponseIs404WhenGameDoesNotExist()
 	{
-		// act
 		$this->client->request('POST', "/delete/999");
 	}
 
 	public function testHandleDeletePageRedirectsToIndexWhenAfterRemovingRecordFromDatabase()
 	{
-		// arrange
 		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
 		$id = DB::table('games')->insertGetId($game);
 
-		// act
 		$crawler = $this->client->request('POST', "/delete/{$id}");
 
-		// assert
 		$this->assertRedirectedTo('/');
 	}
 
@@ -97,7 +80,7 @@ class GameControllerTest extends TestCase
 		$this->assertResponseStatus(200);
 	}
 
-	public function testHandleCreateActuallyCreatesGame()
+	public function testHandleCreatePageActuallyCreatesGame()
 	{
 		$gameInput = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false];
 		$this->client->request('POST', '/create', $gameInput);
@@ -111,7 +94,7 @@ class GameControllerTest extends TestCase
 		$this->assertContains('errors', strtolower($this->client->getResponse()->getContent()));	
 	}
 
-	public function testHandleCreateFillValidWhenThereAreErrorsInOtherFields()
+	public function testHandleCreateFillValidVieldsWhenThereAreErrorsInOtherFields()
 	{
 		$gameInput = ['title' => 't'];
 		$this->client->request('POST', '/create', $gameInput);
