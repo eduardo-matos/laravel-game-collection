@@ -4,7 +4,7 @@ class GamesController extends BaseController
 {
     public function index()
     {
-        $games = Game::all();
+        $games = Game::where('owner', '=', Auth::user()->id)->get();
         return View::make('index', compact('games'));
     }
 
@@ -22,6 +22,7 @@ class GamesController extends BaseController
             $game->title = Input::get('title');
             $game->publisher = Input::get('publisher');
             $game->completed = Input::has('completed');
+            $game->owner = Auth::user()->id;
             $game->save();
 
             return Redirect::action('GamesController@index');
@@ -50,7 +51,7 @@ class GamesController extends BaseController
         $game->completed = Input::has('completed');
         $game->save();
 
-        return Redirect::action('GamesController@index');
+        return Redirect::to('/');
     }
 
     public function delete(Game $game)

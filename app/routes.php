@@ -13,11 +13,18 @@
 
 Route::model('game', 'Game');
 
-Route::get('/', 'GamesController@index');
-Route::get('/create', 'GamesController@create');
-Route::get('/edit/{game}', 'GamesController@edit');
-Route::get('/delete/{game}', 'GamesController@delete');
+Route::group(['before' => 'auth'], function ()
+{
+	Route::get('/', 'GamesController@index');
+	Route::get('/create', 'GamesController@create')->before('auth');
+	Route::get('/edit/{game}', 'GamesController@edit');
+	Route::get('/delete/{game}', 'GamesController@delete');
 
-Route::post('/create', 'GamesController@handleCreate');
-Route::post('/edit', 'GamesController@handleEdit');
-Route::post('/delete/{game}', 'GamesController@handleDelete');
+	Route::post('/create', 'GamesController@handleCreate');
+	Route::post('/edit', 'GamesController@handleEdit');
+	Route::post('/delete/{game}', 'GamesController@handleDelete');
+});
+
+Route::get('/login', 'LoginController@index');
+Route::post('/login', 'LoginController@handleLogin');
+Route::get('/logout', 'LoginController@logout');

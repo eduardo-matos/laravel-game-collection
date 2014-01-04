@@ -2,7 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 
-class CreateGames extends Migration {
+class CreateGamesAndUsers extends Migration {
 
 	/**
 	 * Run the migrations.
@@ -11,11 +11,20 @@ class CreateGames extends Migration {
 	 */
 	public function up()
 	{
+		Schema::create('users', function ($table)
+		{
+			$table->increments('id');
+			$table->string('email', 255);
+			$table->string('password', 255);
+			$table->timestamps();
+		});
+
 		Schema::create('games', function ($table)
 		{
 			$table->increments('id');
 			$table->string('title', 128);
 			$table->string('publisher', 128);
+			$table->integer('owner');
 			$table->boolean('completed');
 			$table->timestamps();
 		});
@@ -29,6 +38,7 @@ class CreateGames extends Migration {
 	public function down()
 	{
 		Schema::drop('games');
+		Schema::drop('users');
 	}
 
 }

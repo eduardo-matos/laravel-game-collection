@@ -3,34 +3,79 @@
 class GameControllerTest extends TestCase
 {
 
-	public function testIndexPageExists()
+	public function testMustBeLoggedInToAccessAllPages($value='')
 	{
-		$this->client->request('GET', '/');
+		Route::enableFilters();
+
+		$user = new User();
+		$user->email = 'e@m.co';
+		$user->password = Hash::make('1');
+		$user->save();
+
+		$game = new Game();
+		$game->title = 't';
+		$game->publisher = 't';
+		$game->completed = true;
+		$game->owner = $user->id;
+		$game->save();
+
+		$this->call('GET', '/');
+		$this->assertRedirectedTo('/login');
+		$this->call('GET', '/create');
+		$this->assertRedirectedTo('/login');
+		$this->call('GET', "/edit/{$game->id}");
+		$this->assertRedirectedTo('/login');
+		$this->call('GET', "/delete/{$game->id}");
+		$this->assertRedirectedTo('/login');
+		$this->call('POST', '/create', ['title' => 't', 'publisher' => 'p', 'completed' => false]);
+		$this->assertRedirectedTo('/login');
+		$this->call('POST', "/edit", ['title' => 't', 'publisher' => 'p', 'completed' => true, 'id' => $game->id]);
+		$this->assertRedirectedTo('/login');
+		$this->call('POST', "/delete/{$game->id}");
+		$this->assertRedirectedTo('/login');
+	
+		Auth::loginUsingId($user->id);
+
+		$this->call('GET', '/');
 		$this->assertResponseStatus(200);
+		$this->call('GET', '/create');
+		$this->assertResponseStatus(200);
+		$this->call('GET', "/edit/{$game->id}");
+		$this->assertResponseStatus(200);
+		$this->call('GET', "/delete/{$game->id}");
+		$this->assertResponseStatus(200);
+		$this->call('POST', '/create', ['title' => 't', 'publisher' => 'p', 'completed' => false]);
+		$this->assertResponseStatus(302);
+		$this->call('POST', "/edit", ['title' => 't', 'publisher' => 'p', 'completed' => true, 'id' => $game->id]);
+		$this->assertResponseStatus(302);
+		$this->call('POST', "/delete/{$game->id}");
+		$this->assertResponseStatus(302);
+
+		Route::disableFilters();
 	}
 
-	public function testIndexPageShowsGameList()
+	public function testIndexPageShowsGamesOwnedOnlyByCurrentLoggedInUser()
 	{
-		$games = [
-			['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'],
-			['title' => 'Test 2', 'publisher' => 'Publisher 2', 'completed' => true, 'created_at' => '2012-12-12 12:12:14', 'updated_at' => '2012-12-12 12:12:15'],
-		];
-		DB::table('games')->insert($games);
+		$game1 = $this->createGame();
+		$game2 = $this->createGame();
 
-		$crawler = $this->client->request('GET', '/');
+		Auth::loginUsingId($game1->owner);
+		$response = $this->call('GET', '/');
+		$this->assertContains($game1->title, $response->getContent());
+		$this->assertNotContains($game2->title, $response->getContent());
 
-		$content = strtolower($this->client->getResponse()->getContent());
-		$this->assertContains('test 1', $content);
-		$this->assertContains('test 2', $content);
-		$this->assertContains('publisher 1', $content);
-		$this->assertContains('publisher 2', $content);
-		$this->assertContains('yes', $content);
-		$this->assertContains('no', $content);
+		Auth::logout();
+
+		Auth::loginUsingId($game2->owner);
+		$response = $this->call('GET', '/');
+		$this->assertContains($game2->title, $response->getContent());
+		$this->assertNotContains($game1->title, $response->getContent());
+
 	}
 
 	public function testDeletePageExists()
 	{
-		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
+		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'owner' => 1, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
 		$id = DB::table('games')->insertGetId($game);
 
 		$this->client->request('GET', "/delete/{$id}");
@@ -40,7 +85,7 @@ class GameControllerTest extends TestCase
 
 	public function testHandleDeletePageActuallyRemovesRecordFromDatabase()
 	{
-		$games = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
+		$games = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'owner' => 1, 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
 		$id = DB::table('games')->insertGetId($games);
 
 		$this->client->request('POST', "/delete/{$id}");
@@ -66,7 +111,7 @@ class GameControllerTest extends TestCase
 
 	public function testHandleDeletePageRedirectsToIndexWhenAfterRemovingRecordFromDatabase()
 	{
-		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
+		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'owner' => 1, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
 		$id = DB::table('games')->insertGetId($game);
 
 		$crawler = $this->client->request('POST', "/delete/{$id}");
@@ -82,6 +127,8 @@ class GameControllerTest extends TestCase
 
 	public function testHandleCreatePageActuallyCreatesGame()
 	{
+		$id = DB::table('users')->insertGetId(['email' => 'e@e.co', 'password' => Hash::make(1), 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13']);
+		Auth::loginUsingId($id);
 		$gameInput = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false];
 		$this->client->request('POST', '/create', $gameInput);
 		$this->assertEquals(DB::table('games')->count(), 1);
@@ -111,7 +158,7 @@ class GameControllerTest extends TestCase
 
 	public function testEditPageExists()
 	{
-		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
+		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'owner' => 1, 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
 		$id = DB::table('games')->insertGetId($game);
 
 		$this->client->request('GET', "/edit/{$id}");
@@ -136,12 +183,12 @@ class GameControllerTest extends TestCase
 
 	public function testHandleEditPageActuallyUpdatesGame()
 	{
-		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
+		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'owner' => 1, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
 		$id = DB::table('games')->insertGetId($game);
 
 		$input = ['id' => $id, 'title' => 'Test 2', 'publisher' => 'Publisher 2', 'completed' => true, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
 		$this->client->request('POST', "/edit", $input);
-		
+
 		$game = Game::find($id);
 		$this->assertEquals('Test 2', $game->title);
 		$this->assertEquals('Publisher 2', $game->publisher);
@@ -150,7 +197,7 @@ class GameControllerTest extends TestCase
 
 	public function testHandleEditPageRedirectsToIndexAfterUpdatingGame()
 	{
-		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
+		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'owner' => 1, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
 		$id = DB::table('games')->insertGetId($game);
 
 		$input = ['id' => $id, 'title' => 'Test 2', 'publisher' => 'Publisher 2', 'completed' => true, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
@@ -161,11 +208,37 @@ class GameControllerTest extends TestCase
 
 	public function testHandleEditShowErrorsWhenGameDoesNotValidate()
 	{
-		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
+		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'owner' => 1, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
 		$id = DB::table('games')->insertGetId($game);
 
 		$gameInput = ['completed' => false, 'id' => $id];
 		$this->client->request('POST', '/edit', $gameInput);
 		$this->assertContains('errors', strtolower($this->client->getResponse()->getContent()));	
+	}
+
+	public function createUserAndLogHimIn()
+	{
+		$user = new User();
+		$user->email = 'e@m.co';
+		$user->password = Hash::make('1');
+		$user->save();
+
+		Auth::logout();
+		Auth::loginUsingId($user->id);
+
+		return $user;
+	}
+
+	public function createGame()
+	{
+		$user = $this->createUserAndLogHimIn();
+		$game = new Game();
+		$game->title = md5(microtime());
+		$game->publisher = md5(microtime());
+		$game->completed = true;
+		$game->owner = $user->id;
+		$game->save();
+
+		return $game;
 	}
 }
