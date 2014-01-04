@@ -1,5 +1,7 @@
 <?php
 
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
 class GamesController extends BaseController
 {
     public function index()
@@ -33,6 +35,10 @@ class GamesController extends BaseController
 
     public function edit(Game $game)
     {
+        if($game->owner != Auth::user()->id) {
+            throw new NotFoundHttpException();
+        }
+
         return View::make('edit', compact('game'));
     }
 
@@ -41,6 +47,10 @@ class GamesController extends BaseController
         $validator = new Validators\Game;
 
         $game = Game::findOrFail(Input::get('id'));
+
+        if($game->owner !== Auth::user()->id) {
+            throw new NotFoundHttpException();
+        }
 
         if(!$validator->passes()) {
             return View::make('edit', compact('game'))->withErrors($validator->errors);

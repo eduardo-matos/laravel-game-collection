@@ -158,10 +158,10 @@ class GameControllerTest extends TestCase
 
 	public function testEditPageExists()
 	{
-		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'owner' => 1, 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
-		$id = DB::table('games')->insertGetId($game);
+		$game = $this->createGame();
+		Auth::loginUsingId($game->owner);
 
-		$this->client->request('GET', "/edit/{$id}");
+		$this->client->request('GET', "/edit/{$game->id}");
 		$this->assertResponseStatus(200);
 	}
 
@@ -176,42 +176,66 @@ class GameControllerTest extends TestCase
 	/**
 	 * @expectedException Symfony\Component\HttpKernel\Exception\NotFoundHttpException
 	 */
+	public function testEditPageResponseIs404WhenGameDoesNotBelongToUser()
+	{
+		$game1 = $this->createGame();
+		$game2 = $this->createGame();
+
+		Auth::loginUsingId($game1->owner);
+
+		$this->call('GET', "/edit/{$game2->id}");
+	}
+
+	/**
+	 * @expectedException Symfony\Component\HttpKernel\Exception\NotFoundHttpException
+	 */
 	public function testHandleEditPageResponseIs404WhenGameDoesNotExist()
 	{
 		$this->client->request('POST', "/edit/999");
 	}
 
+	/**
+	 * @expectedException Symfony\Component\HttpKernel\Exception\NotFoundHttpException
+	 */
+	public function testHandleEditPageResponseIs404WhenGameDoesNotBelongToUser($value='')
+	{
+		$game1 = $this->createGame();
+		$game2 = $this->createGame();
+
+		Auth::loginUsingId($game1->owner);
+
+		$this->call('POST', "/edit", ['id' => $game2->id, 'title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false]);
+	}
+
 	public function testHandleEditPageActuallyUpdatesGame()
 	{
-		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'owner' => 1, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
-		$id = DB::table('games')->insertGetId($game);
+		$game = $this->createGame();
 
-		$input = ['id' => $id, 'title' => 'Test 2', 'publisher' => 'Publisher 2', 'completed' => true, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
+		$input = ['id' => $game->id, 'title' => 'Test 2', 'publisher' => 'Publisher 2', 'completed' => true, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
 		$this->client->request('POST', "/edit", $input);
 
-		$game = Game::find($id);
-		$this->assertEquals('Test 2', $game->title);
-		$this->assertEquals('Publisher 2', $game->publisher);
-		$this->assertEquals(true, $game->completed);
+		$gameUpdated = Game::find($game->id);
+
+		$this->assertEquals('Test 2', $gameUpdated->title);
+		$this->assertEquals('Publisher 2', $gameUpdated->publisher);
+		$this->assertEquals(true, $gameUpdated->completed);
 	}
 
 	public function testHandleEditPageRedirectsToIndexAfterUpdatingGame()
 	{
-		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'owner' => 1, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
-		$id = DB::table('games')->insertGetId($game);
+		$game = $this->createGame();
 
-		$input = ['id' => $id, 'title' => 'Test 2', 'publisher' => 'Publisher 2', 'completed' => true, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
+		$input = ['id' => $game->id, 'title' => 'Test 2', 'publisher' => 'Publisher 2', 'completed' => true, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
 		$this->client->request('POST', "/edit", $input);
-		
+
 		$this->assertRedirectedTo('/');
 	}
 
 	public function testHandleEditShowErrorsWhenGameDoesNotValidate()
 	{
-		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'owner' => 1, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
-		$id = DB::table('games')->insertGetId($game);
+		$game = $this->createGame();
 
-		$gameInput = ['completed' => false, 'id' => $id];
+		$gameInput = ['completed' => false, 'id' => $game->id];
 		$this->client->request('POST', '/edit', $gameInput);
 		$this->assertContains('errors', strtolower($this->client->getResponse()->getContent()));	
 	}
