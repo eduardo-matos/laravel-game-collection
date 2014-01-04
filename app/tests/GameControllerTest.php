@@ -1,5 +1,7 @@
 <?php
 
+use Faker\Factory as FakerFactory;
+
 class GameControllerTest extends TestCase
 {
 
@@ -7,17 +9,9 @@ class GameControllerTest extends TestCase
 	{
 		Route::enableFilters();
 
-		$user = new User();
-		$user->email = 'e@m.co';
-		$user->password = Hash::make('1');
-		$user->save();
+		$game = $this->createGame();
 
-		$game = new Game();
-		$game->title = 't';
-		$game->publisher = 't';
-		$game->completed = true;
-		$game->owner = $user->id;
-		$game->save();
+		Auth::logout($game->owner);
 
 		$this->call('GET', '/');
 		$this->assertRedirectedTo('/login');
@@ -34,7 +28,7 @@ class GameControllerTest extends TestCase
 		$this->call('POST', "/delete/{$game->id}");
 		$this->assertRedirectedTo('/login');
 	
-		Auth::loginUsingId($user->id);
+		Auth::loginUsingId($game->id);
 
 		$this->call('GET', '/');
 		$this->assertResponseStatus(200);
@@ -75,21 +69,15 @@ class GameControllerTest extends TestCase
 
 	public function testDeletePageExists()
 	{
-		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'owner' => 1, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
-		$id = DB::table('games')->insertGetId($game);
-
-		$this->client->request('GET', "/delete/{$id}");
-
+		$game = $this->createGame();
+		$this->call('GET', "/delete/{$game->id}");
 		$this->assertResponseStatus(200);
 	}
 
 	public function testHandleDeletePageActuallyRemovesRecordFromDatabase()
 	{
-		$games = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'owner' => 1, 'completed' => false, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
-		$id = DB::table('games')->insertGetId($games);
-
-		$this->client->request('POST', "/delete/{$id}");
-
+		$game = $this->createGame();
+		$this->call('POST', "/delete/{$game->id}");
 		$this->assertEquals(DB::table('games')->count(), 0);
 	}
 
@@ -98,7 +86,7 @@ class GameControllerTest extends TestCase
 	 */
 	public function testDeletePageReponseIs404WhenGameDoesNotExist()
 	{
-		$this->client->request('GET', "/delete/999");
+		$this->call('GET', "/delete/999");
 	}
 
 	/**
@@ -106,53 +94,49 @@ class GameControllerTest extends TestCase
 	 */
 	public function testHandleDeletePageReponseIs404WhenGameDoesNotExist()
 	{
-		$this->client->request('POST', "/delete/999");
+		$this->call('POST', "/delete/999");
 	}
 
-	public function testHandleDeletePageRedirectsToIndexWhenAfterRemovingRecordFromDatabase()
+	public function testHandleDeletePageRedirectsToIndexAfterRemovingRecordFromDatabase()
 	{
-		$game = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false, 'owner' => 1, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
-		$id = DB::table('games')->insertGetId($game);
-
-		$crawler = $this->client->request('POST', "/delete/{$id}");
-
+		$game = $this->createGame();
+		$this->call('POST', "/delete/{$game->id}");
 		$this->assertRedirectedTo('/');
 	}
 
 	public function testCreatePageExists()
 	{
-		$this->client->request('GET', '/create');
+		$this->call('GET', '/create');
 		$this->assertResponseStatus(200);
 	}
 
 	public function testHandleCreatePageActuallyCreatesGame()
 	{
-		$id = DB::table('users')->insertGetId(['email' => 'e@e.co', 'password' => Hash::make('a'), 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13']);
-		Auth::loginUsingId($id);
+		$user = $this->createUserAndLogHimIn();
 		$gameInput = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false];
-		$this->client->request('POST', '/create', $gameInput);
-		$this->assertEquals(DB::table('games')->count(), 1);
+		$this->call('POST', '/create', $gameInput);
+		$this->assertEquals(Game::all()->count(), 1);
 	}
 
 	public function testHandleCreateShowErrorsWhenGameDoesNotValidate()
 	{
 		$gameInput = ['title' => 't'];
-		$this->client->request('POST', '/create', $gameInput);
+		$this->call('POST', '/create', $gameInput);
 		$this->assertContains('errors', strtolower($this->client->getResponse()->getContent()));	
 	}
 
 	public function testHandleCreateFillValidVieldsWhenThereAreErrorsInOtherFields()
 	{
 		$gameInput = ['title' => 't'];
-		$this->client->request('POST', '/create', $gameInput);
+		$this->call('POST', '/create', $gameInput);
 		$this->assertContains('value="t"', strtolower($this->client->getResponse()->getContent()));	
 
 		$gameInput = ['publisher' => 'p'];
-		$this->client->request('POST', '/create', $gameInput);
+		$this->call('POST', '/create', $gameInput);
 		$this->assertContains('value="p"', strtolower($this->client->getResponse()->getContent()));
 
 		$gameInput = ['completed' => true];
-		$this->client->request('POST', '/create', $gameInput);
+		$this->call('POST', '/create', $gameInput);
 		$this->assertContains('checked="checked"', strtolower($this->client->getResponse()->getContent()));
 	}
 
@@ -161,7 +145,7 @@ class GameControllerTest extends TestCase
 		$game = $this->createGame();
 		Auth::loginUsingId($game->owner);
 
-		$this->client->request('GET', "/edit/{$game->id}");
+		$this->call('GET', "/edit/{$game->id}");
 		$this->assertResponseStatus(200);
 	}
 
@@ -170,7 +154,7 @@ class GameControllerTest extends TestCase
 	 */
 	public function testEditPageResponseIs404WhenGameDoesNotExist()
 	{
-		$this->client->request('GET', "/edit/999");
+		$this->call('GET', "/edit/999");
 	}
 
 	/**
@@ -191,7 +175,7 @@ class GameControllerTest extends TestCase
 	 */
 	public function testHandleEditPageResponseIs404WhenGameDoesNotExist()
 	{
-		$this->client->request('POST', "/edit/999");
+		$this->call('POST', "/edit/999");
 	}
 
 	/**
@@ -212,7 +196,7 @@ class GameControllerTest extends TestCase
 		$game = $this->createGame();
 
 		$input = ['id' => $game->id, 'title' => 'Test 2', 'publisher' => 'Publisher 2', 'completed' => true, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
-		$this->client->request('POST', "/edit", $input);
+		$this->call('POST', "/edit", $input);
 
 		$gameUpdated = Game::find($game->id);
 
@@ -226,7 +210,7 @@ class GameControllerTest extends TestCase
 		$game = $this->createGame();
 
 		$input = ['id' => $game->id, 'title' => 'Test 2', 'publisher' => 'Publisher 2', 'completed' => true, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
-		$this->client->request('POST', "/edit", $input);
+		$this->call('POST', "/edit", $input);
 
 		$this->assertRedirectedTo('/');
 	}
@@ -236,15 +220,17 @@ class GameControllerTest extends TestCase
 		$game = $this->createGame();
 
 		$gameInput = ['completed' => false, 'id' => $game->id];
-		$this->client->request('POST', '/edit', $gameInput);
+		$this->call('POST', '/edit', $gameInput);
 		$this->assertContains('errors', strtolower($this->client->getResponse()->getContent()));	
 	}
 
 	public function createUserAndLogHimIn()
 	{
+		$faker = FakerFactory::create();
+
 		$user = new User();
-		$user->email = 'e@m.co';
-		$user->password = Hash::make('a');
+		$user->email = $faker->email;
+		$user->password = Hash::make($faker->name);
 		$user->save();
 
 		Auth::logout();
@@ -255,10 +241,12 @@ class GameControllerTest extends TestCase
 
 	public function createGame()
 	{
+		$faker = FakerFactory::create();
+
 		$user = $this->createUserAndLogHimIn();
 		$game = new Game();
-		$game->title = md5(microtime());
-		$game->publisher = md5(microtime());
+		$game->title = $faker->name;
+		$game->publisher = $faker->name;
 		$game->completed = true;
 		$game->owner = $user->id;
 		$game->save();
