@@ -127,7 +127,7 @@ class GameControllerTest extends TestCase
 
 	public function testHandleCreatePageActuallyCreatesGame()
 	{
-		$id = DB::table('users')->insertGetId(['email' => 'e@e.co', 'password' => Hash::make(1), 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13']);
+		$id = DB::table('users')->insertGetId(['email' => 'e@e.co', 'password' => Hash::make('a'), 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13']);
 		Auth::loginUsingId($id);
 		$gameInput = ['title' => 'Test 1', 'publisher' => 'Publisher 1', 'completed' => false];
 		$this->client->request('POST', '/create', $gameInput);
@@ -220,7 +220,7 @@ class GameControllerTest extends TestCase
 	{
 		$user = new User();
 		$user->email = 'e@m.co';
-		$user->password = Hash::make('1');
+		$user->password = Hash::make('a');
 		$user->save();
 
 		Auth::logout();
