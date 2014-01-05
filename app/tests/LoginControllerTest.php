@@ -16,6 +16,12 @@ class LoginControllerTest extends TestCase
 		$this->assertResponseStatus(302);
 	}
 
+	public function testSignupPageExists()
+	{
+		$this->call('GET', '/signup');
+		$this->assertResponseStatus(200);
+	}
+
 	public function testLoginPageActuallyLoginUser()
 	{
 		$user = new User();
@@ -74,5 +80,34 @@ class LoginControllerTest extends TestCase
 
 		$this->call('GET', '/logout');
 		$this->assertRedirectedTo('/login');
+	}
+
+	public function testSignupPageActuallyCreateUser()
+	{
+		$data = ['email' => 'a@a.com', 'password' => 'a'];
+		$this->call('POST', '/signup', $data);
+
+		$this->assertEquals(User::all()->count(), 1);
+	}
+
+	public function testSignupPageRedirectsToLoginAfterCreatingUser()
+	{
+		$data = ['email' => 'a@a.com', 'password' => 'a'];
+		$this->call('POST', '/signup', $data);
+
+		$this->assertRedirectedTo('/login');
+	}
+
+	public function testSignupPageShowsErrorWhenTryingToCreateUserWithAlreadyExistingEmail()
+	{
+		$user = new User;
+		$user->email = 'a@a.com';
+		$user->password = Hash::make('a');
+		$user->save();
+
+		$data = ['email' => 'a@a.com', 'password' => 'b'];
+		$response = $this->call('POST', '/signup', $data);
+
+		$this->assertContains('error', $response->getContent());
 	}
 }

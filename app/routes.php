@@ -28,3 +28,5 @@ Route::group(['before' => 'auth'], function ()
 Route::get('/login', 'LoginController@index');
 Route::post('/login', 'LoginController@handleLogin');
 Route::get('/logout', 'LoginController@logout');
+Route::get('/signup', 'LoginController@signup');
+Route::post('/signup', 'LoginController@handleSignup');

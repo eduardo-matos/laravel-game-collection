@@ -1,10 +1,10 @@
-@extends('layout');
+@extends('layout')
 
 @section('content')
 
     @include('_partials.errors')
-
-    <form action="{{ action('LoginController@handleLogin') }}" method="POST">
+    
+    <form action="{{ action('LoginController@handleSignup') }}" method="POST">
 
         <div class="form-group">
             <label for="email">email</label>
@@ -16,6 +16,7 @@
             <input type="password" class="form-control" name="password" id="password">
         </div>
 
-        <input type="submit" value="Save" class="btn btn-primary">
+        <input type="submit" value="Signup" class="btn btn-primary">
     </form>
+
 @stop
