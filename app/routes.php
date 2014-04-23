@@ -21,7 +21,7 @@ Route::group(['before' => 'auth'], function ()
 	Route::get('/delete/{game}', 'GamesController@delete');
 
 	Route::post('/create', 'GamesController@handleCreate');
-	Route::post('/edit', 'GamesController@handleEdit');
+	Route::post('/edit/{game}', 'GamesController@handleEdit');
 	Route::post('/delete/{game}', 'GamesController@handleDelete');
 });
 

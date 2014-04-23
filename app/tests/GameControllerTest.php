@@ -23,7 +23,7 @@ class GameControllerTest extends TestCase
 		$this->assertRedirectedTo('/login');
 		$this->call('POST', '/create', ['title' => 't', 'publisher' => 'p', 'completed' => false]);
 		$this->assertRedirectedTo('/login');
-		$this->call('POST', "/edit", ['title' => 't', 'publisher' => 'p', 'completed' => true, 'id' => $game->id]);
+		$this->call('POST', "/edit/{$game->id}", ['title' => 't', 'publisher' => 'p', 'completed' => true]);
 		$this->assertRedirectedTo('/login');
 		$this->call('POST', "/delete/{$game->id}");
 		$this->assertRedirectedTo('/login');
@@ -40,7 +40,7 @@ class GameControllerTest extends TestCase
 		$this->assertResponseStatus(200);
 		$this->call('POST', '/create', ['title' => 't', 'publisher' => 'p', 'completed' => false]);
 		$this->assertResponseStatus(302);
-		$this->call('POST', "/edit", ['title' => 't', 'publisher' => 'p', 'completed' => true, 'id' => $game->id]);
+		$this->call('POST', "/edit/{$game->id}", ['title' => 't', 'publisher' => 'p', 'completed' => true]);
 		$this->assertResponseStatus(302);
 		$this->call('POST', "/delete/{$game->id}");
 		$this->assertResponseStatus(302);
@@ -195,8 +195,8 @@ class GameControllerTest extends TestCase
 	{
 		$game = $this->createGame();
 
-		$input = ['id' => $game->id, 'title' => 'Test 2', 'publisher' => 'Publisher 2', 'completed' => true, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
-		$this->call('POST', "/edit", $input);
+		$input = ['title' => 'Test 2', 'publisher' => 'Publisher 2', 'completed' => true, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
+		$this->call('POST', "/edit/{$game->id}", $input);
 
 		$gameUpdated = Game::find($game->id);
 
@@ -209,8 +209,8 @@ class GameControllerTest extends TestCase
 	{
 		$game = $this->createGame();
 
-		$input = ['id' => $game->id, 'title' => 'Test 2', 'publisher' => 'Publisher 2', 'completed' => true, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
-		$this->call('POST', "/edit", $input);
+		$input = ['title' => 'Test 2', 'publisher' => 'Publisher 2', 'completed' => true, 'created_at' => '2012-12-12 12:12:12', 'updated_at' => '2012-12-12 12:12:13'];
+		$this->call('POST', "/edit/{$game->id}", $input);
 
 		$this->assertRedirectedTo('/');
 	}
@@ -219,8 +219,8 @@ class GameControllerTest extends TestCase
 	{
 		$game = $this->createGame();
 
-		$gameInput = ['completed' => false, 'id' => $game->id];
-		$this->call('POST', '/edit', $gameInput);
+		$gameInput = ['completed' => false];
+		$this->call('POST', "/edit/{$game->id}", $gameInput);
 		$this->assertContains('errors', strtolower($this->client->getResponse()->getContent()));	
 	}
 

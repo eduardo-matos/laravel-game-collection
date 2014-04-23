@@ -42,11 +42,9 @@ class GamesController extends BaseController
         return View::make('edit', compact('game'));
     }
 
-    public function handleEdit()
+    public function handleEdit(Game $game)
     {
         $validator = new Validators\Game;
-
-        $game = Game::findOrFail(Input::get('id'));
 
         if($game->owner !== Auth::user()->id) {
             throw new NotFoundHttpException();

@@ -7,9 +7,7 @@
 
     @include('_partials.errors')
 
-    <form action="{{ action('GamesController@handleEdit') }}" method="post">
-
-        <input type="hidden" name="id" value="{{ $game->id }}">
+    <form action="{{ action('GamesController@handleEdit', [$game->id]) }}" method="post">
 
         <div class="form-group">
             <label for="title">Title</label>
